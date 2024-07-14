@@ -14,8 +14,16 @@
     let vm = new Vue({
         data: {
             message: 1
-        }
+        },
+        watch: {
+            message() {
+                console.log('vue原生 message属性变化了')
+            }
+        },
     })
+    vm.message = 2;
+    vm.message = 3;
+    vm.message = 4;
 </script>
 </body>
 </html>
