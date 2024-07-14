@@ -13,6 +13,7 @@
     let vm = new Vue({
         data: {
             message: '111',
+            name: 'zs',
             person: {
                 name: 'zs',
                 city: {
@@ -22,6 +23,7 @@
         },
         watch: {
             message() {
+                this.name = 'ls';
                 console.log('watch 属性message发生了改变')
             }
         },
@@ -32,6 +34,8 @@
     vm.message = 2;
     vm.message = 3;
     vm.message = 4;
+    vm.message = 5;
+    console.log('name', vm.name); // zs，因为watch是异步的
 </script>
 </body>
 </html>

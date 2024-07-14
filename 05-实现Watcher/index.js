@@ -86,11 +86,13 @@ class Dep {
     }
 }
 
+let watcherId = 0, watcherQueue = [];
 class Watcher {
     constructor(vm, exp, cb) {
         this.vm = vm;
         this.exp = exp;
         this.cb = cb;
+        this.id = ++watcherId;
         this.get();
     }
     get() {
@@ -99,7 +101,14 @@ class Watcher {
         Dep.target = null;
     }
     run() {
-        // 绑定需要监听的对象的this
-        this.cb.call(this.vm);
+        // 如果已经存在监听队列中，就不执行回调
+        if (watcherQueue.indexOf(this.id) !== -1) return;
+        watcherQueue.push(this.id);
+        Promise.resolve().then(() => {
+            // 绑定需要监听的对象的this
+            this.cb.call(this.vm);
+            const index = watcherQueue.indexOf(this.id)
+            watcherQueue.splice(index, 1)
+        });
     }
 }
