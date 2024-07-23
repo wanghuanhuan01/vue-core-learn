@@ -13,7 +13,10 @@
 <script>
     let vm = new Vue({
         data: {
-            message: 1
+            message: 1,
+            // person: {
+            //     name: 'www'
+            // },
         },
         watch: {
             message() {
@@ -24,6 +27,8 @@
     vm.message = 2;
     vm.message = 3;
     vm.message = 4;
+    // vm.person.age = 18;
+    console.log('vm', vm)
 </script>
 </body>
 </html>
