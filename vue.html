@@ -17,10 +17,14 @@
             // person: {
             //     name: 'www'
             // },
+            hobby: ['看书', '学习'],
         },
         watch: {
-            message() {
-                console.log('vue原生 message属性变化了')
+            // message() {
+            //     console.log('vue原生 message属性变化了')
+            // },
+            hobby() {
+                console.log('hobby属性发生了变化')
             }
         },
     })
@@ -28,6 +32,7 @@
     vm.message = 3;
     vm.message = 4;
     // vm.person.age = 18;
+    vm.hobby.push('敲代码');
     console.log('vm', vm)
 </script>
 </body>
