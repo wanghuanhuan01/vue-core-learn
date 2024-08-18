@@ -44,6 +44,11 @@ class Vue {
                             watcher.get();
                             watcher.dirty = false;
                         }
+                        if (Dep.target) {
+                            for (let j = 0; j < watcher.deps.length; j++) {
+                                watcher.deps[j].depend();
+                            }
+                        }
                         return watcher.value;
                     },
                     set: function computedSetter() {
@@ -134,13 +139,18 @@ class Observer {
         }
     }
 }
+let targetStack = []
 class Dep {
     constructor() {
         this.subs = [];
     }
+    // 依赖收集
+    addSub(watcher) {
+        this.subs.push(watcher);
+    }
     depend() {
         if (Dep.target) {
-            this.subs.push(Dep.target);
+            Dep.target.addDep(this);
         }
     }
     notify() {
@@ -171,23 +181,44 @@ methods.forEach(method => {
 let watcherId = 0, watcherQueue = [];
 class Watcher {
     constructor(vm, exp, cb, options = {}) {
+        // 初始化lazy属性和dirty属性
         this.dirty = this.lazy = !!options.lazy;
         this.vm = vm;
         this.exp = exp;
         this.cb = cb;
         this.id = ++watcherId;
+        this.deps = [];
+        // 如果不是lazy watcher,就直接执行get
         if (!this.lazy) this.get();
+    }
+    // Watcher和Dep的双向收集，这里收集dep是为了1号watcher(计算属性)收集完成下台后，这些dep也能一起收集台上的2号watcher
+    // 注：因为触发2号watcher时，也会触发1号watcher，如果1号watcher被收集后执行完get下台，此时的Dep.target被置空了，留在台上的2号watcher就会没人收集，导致2号watcher一直不会被触发
+    addDep(dep) {
+        if (this.deps.indexOf(dep) !== -1) {
+            return;
+        }
+        this.deps.push(dep);
+        dep.addSub(this);
     }
     get() {
         Dep.target = this;
+        // targetStack：使用栈的概念，新的watcher后进就先出，保证栈顶的永远是在台上的（需要被收集的）watcher
+        targetStack.push(this);
         if (typeof this.exp === 'function') {
             this.value = this.exp.call(this.vm);
         } else {
             this.value = this.vm[this.exp];
         }
-        Dep.target = null;
+        targetStack.pop();
+        // 如果此时栈的长度不为0，表示栈里还有watcher（即台上的watcher），此时不置空Dep.target,而是把此时台上的watcher实例赋值给Dep.target
+        if (targetStack.length > 0) {
+            Dep.target = targetStack[targetStack.length - 1];
+        } else {
+            Dep.target = null;
+        }
     }
     update() {
+        // 如果是lazy watcher，先把dirty属性置为true,不执行run的更新操作，等到下一次访问计算属性时再触发
         if (this.lazy) {
             this.dirty = true;
         } else {
