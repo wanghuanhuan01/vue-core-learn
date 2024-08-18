@@ -24,22 +24,31 @@ class Vue {
         }
         observe(data);
     }
+    // 初始化计算属性:
+    //     1. 计算属性本质也是一个Watcher
+    //     2. 计算属性只能取值，不能修改值，所以计算属性本身不需要依赖收集，计算属性更新的前提是其所依赖的属性发生改变
+    //     3. 计算属性是惰性的，当所依赖的属性发生变化时，计算属性不会立即重新计算，需要等到重新对计算属性进行求值时才会计算
+    //     4. 计算属性是缓存的，只有当依赖的属性发生变化时，计算属性才会更新
     initComputed() {
         let computed = this.$options.computed;
         if (computed) {
             const keys = Object.keys(computed);
             for (let i = 0; i < keys.length; i++) {
-                const watcher = new Watcher(this, computed[keys[i]], function () {});
+                const watcher = new Watcher(this, computed[keys[i]], function() {}, { lazy: true });
                 Object.defineProperty(this, keys[i], {
                     enumerable: true,
                     configurable: true,
-                    get: function computedGetter () {
-                        watcher.get();
+                    get: function computedGetter() {
+                        // todo: 这里为啥还要调一次get？？
+                        if (watcher.dirty) {
+                            watcher.get();
+                            watcher.dirty = false;
+                        }
                         return watcher.value;
                     },
                     set: function computedSetter() {
-                        console.warn('计算属性不允许赋值')
-                    }
+                        console.warn('不能修改计算属性的值')
+                    },
                 });
             }
         }
@@ -74,7 +83,6 @@ function observe(data) {
 
 function defineReactive(obj, key, value) {
     let childObj = observe(obj[key]);
-    console.log('childObj', childObj)
     let dep = new Dep();
     Object.defineProperty(obj, key, {
         enumerable: true,
@@ -137,7 +145,7 @@ class Dep {
     }
     notify() {
         this.subs.forEach((watcher) => {
-            watcher.run();
+            watcher.update();
         })
     }
 }
@@ -162,12 +170,13 @@ methods.forEach(method => {
 
 let watcherId = 0, watcherQueue = [];
 class Watcher {
-    constructor(vm, exp, cb) {
+    constructor(vm, exp, cb, options = {}) {
+        this.dirty = this.lazy = !!options.lazy;
         this.vm = vm;
         this.exp = exp;
         this.cb = cb;
         this.id = ++watcherId;
-        this.get();
+        if (!this.lazy) this.get();
     }
     get() {
         Dep.target = this;
@@ -178,11 +187,19 @@ class Watcher {
         }
         Dep.target = null;
     }
+    update() {
+        if (this.lazy) {
+            this.dirty = true;
+        } else {
+            this.run();
+        }
+    }
     run() {
         // 如果已经存在监听队列中，就不执行回调
         if (watcherQueue.indexOf(this.id) !== -1) return;
         watcherQueue.push(this.id);
         Promise.resolve().then(() => {
+            this.get();
             // 绑定需要监听的对象的this
             this.cb.call(this.vm);
             const index = watcherQueue.indexOf(this.id)

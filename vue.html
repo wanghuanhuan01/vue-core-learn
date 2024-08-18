@@ -13,27 +13,25 @@
 <script>
     let vm = new Vue({
         data: {
-            message: 1,
-            // person: {
-            //     name: 'www'
-            // },
-            hobby: ['看书', '学习'],
+            a: 1,
+            b: 2,
+            person:{
+                name:'zs'
+            }
         },
-        watch: {
-            // message() {
-            //     console.log('vue原生 message属性变化了')
-            // },
-            hobby() {
-                console.log('hobby属性发生了变化')
+        watch: { // 2号watcher
+            x() {
+                console.log('x监听')
+            }
+        },
+        computed: { // 1号watcher
+            x() {
+                console.log('x计算')
+                return JSON.stringify(this.person)
             }
         },
     })
-    vm.message = 2;
-    vm.message = 3;
-    vm.message = 4;
-    // vm.person.age = 18;
-    vm.hobby.push('敲代码');
-    console.log('vm', vm)
+    vm.person = {name:'ls'}
 </script>
 </body>
 </html>

@@ -12,20 +12,23 @@
 <script>
     let vm = new Vue({
         data: {
-            a: 1,
-            b: 2,
+            person:{
+                name:'zs'
+            }
         },
-        // watch: {
-        //     x() {
-        //         console.log('计算属性x发生了变化')
-        //     }
-        // },
-        computed: {
+        watch: { // 2号watcher
             x() {
-                return this.a + this.b;
+                console.log('x监听')
+            }
+        },
+        computed: { // 1号watcher
+            x() {
+                console.log('x计算')
+                return JSON.stringify(this.person)
             }
         },
     })
+    // vm.person = {name:'ls'}
 </script>
 </body>
 </html>
