@@ -22,11 +22,8 @@ function parser(html) {
         let lIndex = html.indexOf('<');
         if (lIndex > 0) { // 如果'<'不在最开头，代表前面有纯文本节点
             const text = html.slice(0, lIndex);
-            const elements = {
-                type: 3,
-                text,
-                parent: currentParent,
-            };
+            const elements = parserText(text);
+            elements.parent = currentParent;
             currentParent.children.push(elements);
             html = html.slice(lIndex);
         } else if (html[lIndex + 1] !== '/') { // 如果当前字符的后一个字符不是'/'，代表不是结束标签，是开始标签
@@ -53,4 +50,35 @@ function parser(html) {
         }
     }
     return root;
+}
+
+// 编译文本节点;
+// 1. 带变量的文本节点：_s(name)  type =2
+// 2. 纯文本节点 type = 3
+function parserText(text) {
+    let originalText = text;
+    let tokens = [];
+    let type = 3;
+    while (text) {
+        const startIndex = text.indexOf('{{');
+        const endIndex = text.indexOf('}}');
+        if (startIndex !== -1 && endIndex !== -1) {
+            type = 2;
+            if (startIndex > 0) { // 如果大于0，说明在带变量的节点前面还有纯文本节点
+                tokens.push(JSON.stringify(text.slice(0, startIndex)));
+            }
+            let exp = text.slice(startIndex + 2, endIndex);
+            tokens.push(`_s(${exp})`);
+            text = text.slice(endIndex + 2);
+        } else {
+            tokens.push(JSON.stringify(text));
+            text = '';
+        }
+    }
+    let element = {
+        type,
+        text: originalText,
+    };
+    type === 2 ? element.expression = tokens.join('+') : '';
+    return element;
 }
